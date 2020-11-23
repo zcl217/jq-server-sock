@@ -19,6 +19,8 @@ const socketTypes = {
     PLAYER_ADDED: 'PLAYER_ADDED',
     PLAYER_REMOVED:'PLAYER_REMOVED',
     UPDATE_PLAYER_LIST: 'UPDATE_PLAYER_LIST',
+    UPDATE_SCENE: 'UPDATE_SCENE',
+    SCENE_UPDATED: 'SCENE_UPDATED',
     INIT: 'INIT',
     ERROR: 'ERROR',
 }
@@ -62,6 +64,13 @@ sock.on('connection', function (connection) {
                     });
                 };
                 break;
+            case socketTypes.UPDATE_SCENE:
+                if (!handleSceneUpdate(connection, message)) {
+                    writeMessage(connection, {
+                        type: socketTypes.ERROR,
+                        message: 'error in scene update',
+                    });
+                };
             case socketTypes.REMOVE_PLAYER:
                 //this happens on disconnect
                 break;
@@ -117,7 +126,7 @@ server.listen(port, '0.0.0.0');
 function handleRoomCreation(connection, message) {
     console.log(message);
     let newRoom = generateRoomId();
-    newRoom = 1;
+   // newRoom = 1;
     console.log(newRoom);
     rooms.set(newRoom, new Map());
     let playerId = connection.id;
@@ -143,7 +152,7 @@ function generateRoomId() {
 
 function handleRoomJoin(connection, message) {
     let roomId = parseInt(message.roomId);
-    roomId = 1;
+  //  roomId = 1;
     let playerId = connection.id;
     let playerObject = message.player;
     console.log(rooms);
@@ -184,6 +193,22 @@ function handlePlayerUpdate(connection, message) {
 
     Object.assign(currentRoom.get(connection.id), newProperties);
     return true;
+}
+
+function handleSceneUpdate(connection, message) {
+    let roomId = playerRoomMap.get(connection.id);
+    if (!rooms.has(roomId)) return false;
+
+    let currentRoom = rooms.get(roomId);
+    if (!currentRoom.has(connection.id)) return false;
+
+    currentRoom.forEach((value, connectionId) => {
+        let connection = connectionMap.get(connectionId);
+        writeMessage(connection, {
+            type: socketTypes.SCENE_UPDATED,
+            scene: message.scene
+        })
+    });
 }
 
 function broadcastUpdatedProperties(players) {
