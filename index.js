@@ -21,6 +21,7 @@ const socketTypes = {
     UPDATE_PLAYER_LIST: 'UPDATE_PLAYER_LIST',
     UPDATE_SCENE: 'UPDATE_SCENE',
     SCENE_UPDATED: 'SCENE_UPDATED',
+    REACHED_GOAL: 'REACHED_GOAL',
     INIT: 'INIT',
     ERROR: 'ERROR',
 }
@@ -71,8 +72,9 @@ sock.on('connection', function (connection) {
                         message: 'error in scene update',
                     });
                 };
-            case socketTypes.REMOVE_PLAYER:
-                //this happens on disconnect
+                break;
+            case socketTypes.REACHED_GOAL:
+                handleReachedGoal(connection);
                 break;
             default:
                 break;
@@ -82,18 +84,15 @@ sock.on('connection', function (connection) {
 
     connection.on('close', function () {
         console.log("connection closed");
-        //handlePlayerRemove(message);
         let playerId = connection.id;
-        //might need a reverse mapping of users -> rooms,
-        //or else how tf are we supposed to know 
-        // which user is in which room
         if (!playerRoomMap.has(playerId)) return;
         let playerRoom = playerRoomMap.get(playerId);
         console.log(playerRoom);
+        if (!rooms.has(playerRoom)) return;
         //broadcast to the player's room that the player left
         rooms.get(playerRoom).forEach((value, key) => {
-            let connection = connectionMap.get(key);
-            writeMessage(connection, {
+            let otherConnection = connectionMap.get(key);
+            writeMessage(otherConnection, {
                 type: socketTypes.PLAYER_REMOVED,
                 connectionId: connection.id
             });
@@ -102,6 +101,10 @@ sock.on('connection', function (connection) {
         rooms.get(playerRoom).delete(playerId);
         playerRoomMap.delete(playerId);
         connectionMap.delete(connection.id);
+        if (rooms.get(playerRoom).size === 0) {
+            console.log("Deleting room since everyone left");
+            rooms.delete(playerRoom);
+        }
     });
 
     
@@ -126,7 +129,7 @@ server.listen(port, '0.0.0.0');
 function handleRoomCreation(connection, message) {
     console.log(message);
     let newRoom = generateRoomId();
-   // newRoom = 1;
+ //   newRoom = 1;
     console.log(newRoom);
     rooms.set(newRoom, new Map());
     let playerId = connection.id;
@@ -152,7 +155,7 @@ function generateRoomId() {
 
 function handleRoomJoin(connection, message) {
     let roomId = parseInt(message.roomId);
-  //  roomId = 1;
+ //   roomId = 1;
     let playerId = connection.id;
     let playerObject = message.player;
     console.log(rooms);
@@ -167,19 +170,6 @@ function handleRoomJoin(connection, message) {
     let currentRoom = rooms.get(roomId);
     currentRoom.set(playerId, playerObject);
     playerRoomMap.set(playerId, roomId);
-    //broadcast to the room that a player has joined
-    currentRoom.forEach((value, otherConnection) => {
-        // don't send to yourself
-        if (otherConnection !== connection.id) {
-            let connection = connectionMap.get(otherConnection);
-            writeMessage(connection, {
-                type: socketTypes.PLAYER_ADDED,
-                connectionId: connection.id,
-                player: playerObject
-            });
-        }
-    });
-
     return true;
 }
 
@@ -209,6 +199,7 @@ function handleSceneUpdate(connection, message) {
             scene: message.scene
         })
     });
+    return true;
 }
 
 function broadcastUpdatedProperties(players) {
@@ -220,6 +211,22 @@ function broadcastUpdatedProperties(players) {
             type: socketTypes.UPDATE_PLAYER_LIST,
             playerList
         });
+    });
+}
+
+function handleReachedGoal(connection) {
+    // broadcast that someone reached goal to entire room
+    let roomId = playerRoomMap.get(connection.id);
+    if (!rooms.has(roomId)) return false;
+
+    let currentRoom = rooms.get(roomId);
+    if (!currentRoom.has(connection.id)) return false;
+
+    currentRoom.forEach((value, connectionId) => {
+        let connection = connectionMap.get(connectionId);
+        writeMessage(connection, {
+            type: socketTypes.REACHED_GOAL,
+        })
     });
 }
 
