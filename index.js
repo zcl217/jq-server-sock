@@ -41,7 +41,7 @@ sock.on('connection', function (connection) {
     });
     connectionMap.set(connection.id, connection);
 
-  //  console.log("connection made!");
+    console.log("connection made!");
     connection.on('data', function (rawMessage) {
         let message = JSON.parse(rawMessage);
     //    console.log(JSON.stringify(message));
