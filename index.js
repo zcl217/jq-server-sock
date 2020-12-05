@@ -115,7 +115,7 @@ sock.on('connection', function (connection) {
         rooms.forEach((players, roomId) => {
             broadcastUpdatedProperties(players);
         });
-    }, 20);
+    }, 30);
 //16.7
     
 });
