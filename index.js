@@ -5,7 +5,7 @@ const sockjs = require('sockjs');
 
 const sock = sockjs.createServer({ prefix: '/test' });
 
-console.log('server created');
+// console.log('server created');
 
 const socketTypes = {
     CREATE_ROOM: 'CREATE_ROOM',
@@ -41,7 +41,7 @@ sock.on('connection', function (connection) {
     });
     connectionMap.set(connection.id, connection);
 
-    console.log("connection made!");
+  //  console.log("connection made!");
     connection.on('data', function (rawMessage) {
         let message = JSON.parse(rawMessage);
     //    console.log(JSON.stringify(message));
@@ -83,11 +83,11 @@ sock.on('connection', function (connection) {
     });
 
     connection.on('close', function () {
-        console.log("connection closed");
+    //    console.log("connection closed");
         let playerId = connection.id;
         if (!playerRoomMap.has(playerId)) return;
         let playerRoom = playerRoomMap.get(playerId);
-        console.log(playerRoom);
+    //    console.log(playerRoom);
         if (!rooms.has(playerRoom)) return;
         //broadcast to the player's room that the player left
         rooms.get(playerRoom).forEach((value, key) => {
@@ -102,7 +102,7 @@ sock.on('connection', function (connection) {
         playerRoomMap.delete(playerId);
         connectionMap.delete(connection.id);
         if (rooms.get(playerRoom).size === 0) {
-            console.log("Deleting room since everyone left");
+     //       console.log("Deleting room since everyone left");
             rooms.delete(playerRoom);
         }
     });
@@ -115,7 +115,7 @@ sock.on('connection', function (connection) {
         rooms.forEach((players, roomId) => {
             broadcastUpdatedProperties(players);
         });
-    }, 16.7);
+    }, 20);
 //16.7
     
 });
@@ -127,10 +127,10 @@ console.log("Listening on port: " + port);
 server.listen(port, '0.0.0.0');
 
 function handleRoomCreation(connection, message) {
-    console.log(message);
+  //  console.log(message);
     let newRoom = generateRoomId();
  //   newRoom = 1;
-    console.log(newRoom);
+  //  console.log(newRoom);
     rooms.set(newRoom, new Map());
     let playerId = connection.id;
     let playerObject = message.player;
@@ -158,9 +158,9 @@ function handleRoomJoin(connection, message) {
  //   roomId = 1;
     let playerId = connection.id;
     let playerObject = message.player;
-    console.log(rooms);
+ //   console.log(rooms);
     if (!rooms.has(roomId)) return false;
-    console.log(roomId);
+ //   console.log(roomId);
 
     writeMessage(connection, {
         type: socketTypes.JOIN_ROOM_SUCCESS,
