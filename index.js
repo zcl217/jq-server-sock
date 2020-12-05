@@ -122,7 +122,7 @@ sock.on('connection', function (connection) {
 
 const server = http.createServer(); 
 sock.installHandlers(server, {prefix:'/test'});
-const port = process.env.PORT || 3333;
+const port = process.env.PORT || 80;
 console.log("Listening on port: " + port);
 server.listen(port, '0.0.0.0');
 
